@@ -1,5 +1,4 @@
 const express = require("express");
-
 const {
   listContacts,
   getContactById,
@@ -14,9 +13,10 @@ const router = express.Router();
 
 router.get("/", async (req, res, next) => {
   try {
-    const contacts = listContacts();
+    const contacts = await listContacts();
     res.status(200).json(contacts);
-  } catch {
+  } catch (error) {
+    console.error("Error listing contacts:", error);
     return res.status(500).send("Something went wrong");
   }
 });
@@ -24,23 +24,24 @@ router.get("/", async (req, res, next) => {
 router.get("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const contact = getContactById(contactId);
+    const contact = await getContactById(contactId);
     if (!contact) {
       return res.status(404).send("Contact not found");
     }
     res.status(200).json(contact);
-  } catch {
+  } catch (error) {
+    console.error("Error getting contact:", error);
     return res.status(500).send("Something went wrong");
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", async (req, res) => {
   const { error } = contactSchema.validate(req.body);
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
   try {
-    const contact = addContact(req.body);
+    const contact = await addContact(req.body);
     return res.status(201).json(contact);
   } catch (err) {
     console.error(err);
@@ -48,21 +49,22 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
-  const contactId = req.params.contactId;
+router.delete("/:contactId", async (req, res) => {
+  const { contactId } = req.params;
   try {
-    const removed = removeContact(contactId);
+    const removed = await removeContact(contactId);
     if (removed) {
       return res.status(200).send("Contact deleted");
     } else {
       return res.status(404).send("Contact not found");
     }
   } catch (err) {
+    console.error("Error deleting contact:", err);
     return res.status(500).send("Something went wrong");
   }
 });
 
-router.put("/:contactId", async (req, res, next) => {
+router.put("/:contactId", async (req, res) => {
   const { contactId } = req.params;
   if (!contactId) {
     return res.status(400).send("Id is required to perform update");
@@ -71,14 +73,15 @@ router.put("/:contactId", async (req, res, next) => {
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
-  const contact = getContactById(contactId);
-  if (!contact) {
-    return res.status(404).send("Contact not found");
-  }
   try {
-    updateContact(contactId, req.body);
-    return res.status(200).send("Contact sucessfully updated!");
-  } catch {
+    const contact = await getContactById(contactId);
+    if (!contact) {
+      return res.status(404).send("Contact not found");
+    }
+    await updateContact(contactId, req.body);
+    return res.status(200).send("Contact successfully updated!");
+  } catch (err) {
+    console.error("Error updating contact:", err);
     return res.status(500).send("Something went wrong!");
   }
 });

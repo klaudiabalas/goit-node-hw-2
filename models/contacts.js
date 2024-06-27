@@ -1,4 +1,5 @@
 const Joi = require("joi");
+
 class Contact {
   constructor(id, name, email, phone) {
     this.id = id;
@@ -9,9 +10,9 @@ class Contact {
 }
 
 const contactSchema = Joi.object({
-  name: Joi.string().min(2).max(50).required(),
+  name: Joi.string().min(3).required(),
   email: Joi.string().email().required(),
-  phone: Joi.string().required(),
+  phone: Joi.string().min(10).required(),
 });
 
 module.exports = { Contact, contactSchema };

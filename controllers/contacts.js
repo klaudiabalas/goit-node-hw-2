@@ -1,63 +1,57 @@
+const fs = require("fs").promises;
+const path = require("path");
 const { Contact } = require("../models/contacts.js");
+const contactStoragePath = path.join(__dirname, "../db/contacts.json");
 
-const contactStorage = require("../db/contacts.json");
-
-const listContacts = () => {
-  return contactStorage;
+const listContacts = async () => {
+  const data = await fs.readFile(contactStoragePath, "utf8");
+  return JSON.parse(data);
 };
 
-const getContactById = (contactId) => {
-  return contactStorage.find((u) => u.id == contactId);
+const getContactById = async (contactId) => {
+  const contacts = await listContacts();
+  return contacts.find((contact) => contact.id == contactId);
 };
 
-const removeContact = (contactId) => {
-  let contacts = loadContacts();
-  const index = contacts.findIndex((u) => u.id == contactId);
-  if (index > -1) {
+const removeContact = async (contactId) => {
+  const contacts = await listContacts();
+  const index = contacts.findIndex((contact) => contact.id == contactId);
+  if (index !== -1) {
     contacts.splice(index, 1);
-    saveContacts(contacts);
+    await fs.writeFile(contactStoragePath, JSON.stringify(contacts, null, 2));
     return true;
   }
   return false;
 };
 
-const addContact = (body) => {
-  const { error } = contactSchema.validate(body);
-  if (error) {
-    throw new Error(`Validation error: ${error.details[0].message}`);
-  }
-  const contacts = loadContacts();
-  const existingIds = contacts.map((contact) => parseInt(contact.id));
-  const newId = Math.max(...existingIds) + 1;
+const addContact = async (body) => {
+  const contacts = await listContacts();
+  const existingIds = contacts.map((contact) => Number(contact.id));
+  const newId = existingIds.length ? Math.max(...existingIds) + 1 : 1;
+
   const contact = new Contact(
     newId.toString(),
     body.name,
     body.email,
     body.phone
   );
+
   contacts.push(contact);
-  saveContacts(contacts);
+  await fs.writeFile(contactStoragePath, JSON.stringify(contacts, null, 2));
   return contact;
 };
 
-const updateContact = (contactId, body) => {
-  const contacts = loadContacts();
-  const index = contacts.findIndex((u) => u.id == contactId);
-  if (index !== -1) {
-    const updatedContact = {
-      ...contacts[index],
-      ...body,
-      id: contacts[index].id,
-    };
-    const { error } = contactSchema.validate(updatedContact);
-    if (error) {
-      throw new Error(`Validation error: ${error.details[0].message}`);
-    }
-    contacts[index] = updatedContact;
-    saveContacts(contacts);
-    return updatedContact;
+const updateContact = async (contactId, body) => {
+  const contacts = await listContacts();
+  const contact = contacts.find((contact) => contact.id == contactId);
+  if (contact) {
+    contact.name = body.name;
+    contact.email = body.email;
+    contact.phone = body.phone;
+    await fs.writeFile(contactStoragePath, JSON.stringify(contacts, null, 2));
+    return contact;
   }
-  return null;
+  throw new Error("Contact not found");
 };
 
 module.exports = {
