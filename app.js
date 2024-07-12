@@ -5,10 +5,10 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const router = require("./routes/routes");
-const { connectToDatabase } = require("./startup/database.js");
+const router = require("./routes/api/routes");
+const { connectToDatabase } = require("./start/database");
 
-connectDatabase();
+connectToDatabase();
 
 const app = express();
 
