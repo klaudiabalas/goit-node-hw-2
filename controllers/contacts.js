@@ -1,4 +1,4 @@
-const { Contact, contactValidationSchema } = require("../models/contacts.js");
+const { Contact, contactValidationSchema } = require("../models/contacts");
 
 const listContacts = async () => {
   const contacts = await Contact.find();
