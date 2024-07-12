@@ -7,8 +7,8 @@ const {
   removeContact,
   updateContact,
   updateStatusContact,
-} = require("../controllers/contacts");
-const { contactValidationSchema } = require("../models/contacts");
+} = require("../../controllers/contacts");
+const { contactValidationSchema } = require("../../models/contacts");
 
 const router = express.Router();
 
