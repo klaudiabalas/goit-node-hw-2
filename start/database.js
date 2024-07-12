@@ -1,7 +1,7 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 
-const pathdb = process.env.MONGO_SECRET;
+const pathdb = process.env.DB_MANGO;
 
 if (!pathdb) {
   console.error("No db secret...");
