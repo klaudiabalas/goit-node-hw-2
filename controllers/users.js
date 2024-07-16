@@ -1,4 +1,4 @@
-onst { User, hashPassword } = require("../models/user");
+onst { User, hashPassword } = require("../service/schemas/users");
 
 const createUser = async (password, email, subscription, token) => {
   const hashedPassword = hashPassword(password);

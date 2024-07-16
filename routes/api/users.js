@@ -1,15 +1,15 @@
 const express = require("express");
 
-const { auth } = require("../auth/auth");
-const loginHandler = require("../auth/loginHandler");
-const { userValidationSchema } = require("../models/user");
+const { auth } = require("../../auth/auth");
+const loginHandler = require("../../auth/login");
+const { userValidationSchema } = require("../../service/schemas/users");
 
 const {
   createUser,
   getUserById,
   getUserByEmail,
   updateUserToken,
-} = require("../controllers/users");
+} = require("../../controllers/users");
 
 const router = express.Router();
 
