@@ -1,51 +1,162 @@
-const { Contact, contactValidationSchema } = require("../models/contacts");
+const service = require("../service");
+const Joi = require("joi");
 
-const listContacts = async () => {
-  const contacts = await Contact.find();
-  return contacts;
-};
+const schema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string()
+    .email({
+      minDomainSegments: 2,
+      tlds: { allow: ["com", "net"] },
+    })
+    .required(),
+  phone: Joi.number().integer().positive().required(),
+  favorite: Joi.bool(),
+});
 
-const addContact = async (name, email, phone, favorite) => {
+const get = async (req, res, next) => {
   try {
-    const contact = new Contact({ name, email, phone, favorite });
-    contact.save();
-    return contact;
+    const results = await service.getAllContacts();
+    res.json({
+      status: 200,
+      data: { contacts: results },
+    });
   } catch (err) {
-    throw err;
+    console.error("Error getting contacts list:", err);
+    next(err);
   }
 };
 
-const getContactById = async (_id) => {
-  const contact = await Contact.findOne({ _id });
-  return contact;
-};
+const getById = async (req, res, next) => {
+  const id = req.params.contactId;
 
-const removeContact = async (_id) => {
   try {
-    return Contact.findByIdAndDelete({ _id });
+    const result = await service.getContactById(id);
+    if (result) {
+      return res.json({
+        status: 200,
+        data: { contact: result },
+      });
+    }
+
+    res.status(404).json({
+      status: 404,
+      message: "Not found",
+    });
   } catch (err) {
-    console.log(err);
+    console.error("Error getting contact:", err);
+    next(err);
   }
 };
 
-const updateContact = async (_id, newContact) => {
-  const updatedContact = await Contact.findByIdAndUpdate(_id, newContact);
-  return updatedContact;
+const remove = async (req, res, next) => {
+  const id = req.params.contactId;
+
+  try {
+    const result = await service.removeContact(id);
+    if (result) {
+      return res.json({
+        status: 200,
+        message: "Contact deleted",
+      });
+    }
+
+    res.status(404).json({
+      status: 404,
+      message: "Not found",
+    });
+  } catch (err) {
+    console.error("Error removing contact:", err);
+    next(err);
+  }
 };
 
-const updateStatusContact = async (_id, favorite) => {
-  const update = { favorite };
-  const updatedContact = await Contact.findByIdAndUpdate(_id, update, {
-    new: true,
-  });
-  return updatedContact;
+const create = async (req, res, next) => {
+  const { error } = schema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({
+      status: 400,
+      message: error.message,
+    });
+  }
+
+  try {
+    const result = await service.createContact(req.body);
+    res.status(201).json({
+      status: 201,
+      data: { newContact: result },
+    });
+  } catch (err) {
+    console.error("Error creating contact:", err);
+    next(err);
+  }
+};
+
+const update = async (req, res, next) => {
+  const id = req.params.contactId;
+  const { error } = schema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({
+      status: 400,
+      message: error.message,
+    });
+  }
+
+  try {
+    const result = await service.updateContact(id, req.body);
+    if (result) {
+      return res.json({
+        status: 200,
+        data: { newContact: result },
+      });
+    }
+
+    res.status(404).json({
+      status: 404,
+      message: "Not found",
+    });
+  } catch (err) {
+    console.error("Error updating contact:", err);
+    next(err);
+  }
+};
+
+const updateStatus = async (req, res, next) => {
+  const id = req.params.contactId;
+  const { error } = req.body;
+
+  if (error) {
+    return res.status(400).json({
+      status: 400,
+      message: error.message,
+    });
+  }
+
+  try {
+    const result = await service.updateContact(id, req.body);
+    if (result) {
+      return res.json({
+        status: 200,
+        data: { updatedContact: result },
+      });
+    }
+
+    res.status(404).json({
+      status: 404,
+      message: "Not found",
+    });
+  } catch (err) {
+    console.error("Error updating favorite status in contact:", err);
+    next(err);
+  }
 };
 
 module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
-  updateStatusContact,
+  get,
+  getById,
+  remove,
+  create,
+  update,
+  updateStatus,
 };
