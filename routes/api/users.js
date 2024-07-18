@@ -1,80 +1,35 @@
 const express = require("express");
-
-const { auth } = require("../../auth/auth");
-const loginHandler = require("../../auth/login");
-const { userValidationSchema } = require("../../service/schemas/users");
-
+const passport = require("../../middleware/passport");
+const auth = require("../../middleware/auth");
 const {
-  createUser,
-  getUserById,
-  getUserByEmail,
-  updateUserToken,
-} = require("../../controllers/users");
+  validateBody,
+  validateSubscription,
+  userValidationSchema,
+} = require("../../service/schemas/users");
+
+const controllersAuth = require("../../controllers/users");
 
 const router = express.Router();
 
-router.post("/signup", async (req, res) => {
-  const { error } = userValidationSchema.validate(req.body);
-  if (error) {
-    return res.status(400).send(error.details[0].message);
-  }
-  try {
-    const { password, email, subscription } = req.body;
-    const isEmailOccupied = await getUserByEmail(email);
-    if (isEmailOccupied) {
-      return res.status(409).send(`Email ${email} is already in use!`);
-    }
-    const user = await createUser(password, email, subscription);
-    return res.status(200).json(user);
-  } catch (err) {
-    return res.status(500).send("Something went wrong POST!");
-  }
-});
+router.use(passport.initialize());
 
-router.post("/login", async (req, res) => {
-  const loginSchema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-  });
-
-  const { error } = loginSchema.validate(req.body);
-  if (error) {
-    return res.status(400).send(error.details[0].message);
-  }
-
-  const { email, password } = req.body;
-  const user = await getUserByEmail(email);
-  try {
-    const token = await loginHandler(email, password);
-    return res.status(200).send(token);
-  } catch (err) {
-    return res.status(401).send("Email or password is wrong");
-  }
-});
-
-router.get("/logout", auth, async (req, res) => {
-  try {
-    const { _id } = req.user;
-    const user = await getUserById(_id);
-    if (!user) {
-      return res.status(401).send("Not authorized");
-    }
-    await updateUserToken(_id);
-    res.sendStatus(204);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-router.get("/current", auth, async (req, res) => {
-  const { id } = req.user;
-  const user = await getUserById(id);
-  const userData = {
-    email: user.email,
-    subscription: user.subscription,
-  };
-  res.status(200).json(userData);
-});
+router.post(
+  "/signup",
+  validateBody(userValidationSchema),
+  controllersAuth.getNewUser
+);
+router.post(
+  "/login",
+  validateBody(userValidationSchema),
+  controllersAuth.login
+);
+router.get("/logout", auth, controllersAuth.logout);
+router.get("/current", auth, controllersAuth.currentUser);
+router.patch(
+  "/",
+  auth,
+  validateSubscription,
+  controllersAuth.updateSubscription
+);
 
 module.exports = router;

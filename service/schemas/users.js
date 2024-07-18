@@ -1,3 +1,4 @@
+const Joi = require("joi");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
@@ -32,4 +33,50 @@ const hashPassword = (pass) => {
 
 const User = mongoose.model("user", user);
 
-module.exports = { User, userValidationSchema, hashPassword };
+const userValidationSchema = Joi.object({
+  password: Joi.string().required(),
+  email: Joi.string().email().required(),
+  subscription: Joi.string(),
+  token: Joi.string(),
+});
+
+const subscriptionSchema = Joi.object({
+  subscription: Joi.string().valid("starter", "pro", "business").required(),
+});
+
+const validateBody = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    next();
+  };
+};
+
+module.exports = {
+  validateBody,
+};
+
+const validateSubscription = (req, res, next) => {
+  const { error } = subscriptionSchema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({
+      status: "error",
+      code: 400,
+      message: error.details[0].message,
+    });
+  }
+
+  next();
+};
+
+module.exports = {
+  User,
+  userValidationSchema,
+  hashPassword,
+  subscriptionSchema,
+  validateBody,
+  validateSubscription,
+};

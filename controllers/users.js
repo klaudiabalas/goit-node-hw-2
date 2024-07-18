@@ -1,46 +1,135 @@
-onst { User, hashPassword } = require("../service/schemas/users");
+const { User, hashPassword } = require("../service/schemas/users");
+const jwt = require("jsonwebtoken");
 
-const createUser = async (password, email, subscription, token) => {
-  const hashedPassword = hashPassword(password);
+require("dotenv").config();
 
-  const user = new User({
-    password: hashedPassword,
-    email,
-    subscription,
-    token,
-  });
-  user.save();
-  return user;
+const secretJwt = process.env.SECRET_JWT;
+
+const getNewUser = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email is already used" });
+    }
+
+    const newUser = new User({ email });
+    newUser.setPassword(password);
+    await newUser.save();
+
+    res.status(201).json({
+      status: "success",
+      user: {
+        email: newUser.email,
+        subscription: newUser.subscription,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-const getAllUsers = async () => {
-  const users = await User.find();
-  return users;
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user || !user.validPassword(password)) {
+      return res.status(401).json({ message: "Email or password is wrong" });
+    }
+
+    const payload = {
+      id: user._id,
+      email: user.email,
+    };
+
+    const token = jwt.sign(payload, secret, { expiresIn: "3d" });
+
+    user.token = token;
+    await user.save();
+
+    res.json({
+      token,
+      user: {
+        email: user.email,
+        subscription: user.subscription,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-const getUserById = async (_id) => {
-  const user = await User.findOne({ _id });
-  return user;
+const logout = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        code: 401,
+        message: "Not authorized",
+      });
+    }
+
+    user.token = null;
+    await user.save();
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 };
 
-const getUserByEmail = async (email) => {
-  const user = await User.findOne({ email });
-  return user;
+const currentUser = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Authorized failed" });
+    }
+    res.status(200).json({
+      email: user.email,
+      subscription: user.subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-const addUserToken = async (id, token) => {
-  return User.findByIdAndUpdate(id, { token });
-};
+const updateSubscription = async (req, res, next) => {
+  try {
+    const { subscription } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { subscription },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        code: 404,
+        message: "User not found",
+      });
+    }
 
-const updateUserToken = async (_id) => {
-  return User.findOneAndUpdate(_id, { token: null });
+    res.json({
+      status: "sucess",
+      code: 200,
+      data: {
+        email: user.email,
+        subscription: user.subscription,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
-  createUser,
-  getAllUsers,
-  getUserById,
-  addUserToken,
-  updateUserToken,
-  getUserByEmail,
+  getNewUser,
+  login,
+  logout,
+  currentUser,
+  updateSubscription,
 };
