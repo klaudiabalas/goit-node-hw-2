@@ -15,7 +15,7 @@ const schema = Joi.object({
 
 const get = async (req, res, next) => {
   try {
-    const results = await service.getAllContacts();
+    const results = await service.getAllContacts(req.user._id);
     res.json({
       status: 200,
       data: { contacts: results },
@@ -81,7 +81,10 @@ const create = async (req, res, next) => {
   }
 
   try {
-    const result = await service.createContact(req.body);
+    const result = await service.createContact({
+      ...req.body,
+      owner: req.user._id,
+    });
     res.status(201).json({
       status: 201,
       data: { newContact: result },

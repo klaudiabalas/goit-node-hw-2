@@ -15,7 +15,7 @@ app.use(morgan(formatsLogger));
 app.use(cors());
 app.use(express.json());
 
-app.use("/contacts", router);
+app.use("/api/contacts", router);
 
 app.use((req, res) => {
   res.status(404).send("Not found!");
