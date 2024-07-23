@@ -6,7 +6,7 @@ const {
   validateSubscription,
   userValidationSchema,
 } = require("../../service/schemas/users");
-
+const uploadImage = require("../../middleware/multer");
 const controllersAuth = require("../../controllers/users");
 
 const router = express.Router();
@@ -34,7 +34,7 @@ router.patch(
 router.patch(
   "/avatars",
   auth,
-  upload.single("avatar"),
+  uploadImage.single("avatar"),
   controllersAuth.updateAvatar
 );
 
