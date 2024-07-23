@@ -31,5 +31,11 @@ router.patch(
   validateSubscription,
   controllersAuth.updateSubscription
 );
+router.patch(
+  "/avatars",
+  auth,
+  upload.single("avatar"),
+  controllersAuth.updateAvatar
+);
 
 module.exports = router;
