@@ -1,5 +1,6 @@
 const { User, hashPassword } = require("../service/schemas/users");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
 
 require("dotenv").config();
 
