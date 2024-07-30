@@ -26,6 +26,14 @@ const user = new Schema({
   avatarURL: {
     type: String,
   },
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, "Verify token is required"],
+  },
 });
 
 const hashPassword = (pass) => {
@@ -71,6 +79,10 @@ const validateSubscription = (req, res, next) => {
   next();
 };
 
+const schemaEmail = Joi.object({
+  email: Joi.string().email().required(),
+});
+
 module.exports = {
   User,
   userValidationSchema,
@@ -78,4 +90,5 @@ module.exports = {
   subscriptionSchema,
   validateBody,
   validateSubscription,
+  schemaEmail,
 };

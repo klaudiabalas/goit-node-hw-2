@@ -5,9 +5,11 @@ const {
   validateBody,
   validateSubscription,
   userValidationSchema,
+  schemaEmail,
 } = require("../../service/schemas/users");
 const uploadImage = require("../../middleware/multer");
 const controllersAuth = require("../../controllers/users");
+const ver = require("../../controllers/ver");
 
 const router = express.Router();
 
@@ -37,5 +39,7 @@ router.patch(
   uploadImage.single("avatar"),
   controllersAuth.updateAvatar
 );
+router.get("/verify/:verificationToken", ver.verificationUser);
+router.post("/verify".validateBody(schemaEmail), ver.sendVerifictaionEmail);
 
 module.exports = router;
