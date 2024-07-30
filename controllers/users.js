@@ -1,6 +1,7 @@
 const { User, hashPassword } = require("../service/schemas/users");
 const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
+const { verificationEmail } = require("../nodemailer/nodemailer");
 
 require("dotenv").config();
 
@@ -15,17 +16,25 @@ const getNewUser = async (req, res, next) => {
       return res.status(409).json({ message: "Email is already used" });
     }
 
-    const newUser = new User({ email });
+    const verificationToken = nanoid();
+
+    const newUser = new User({ email, verificationToken });
     newUser.setPassword(password);
     await newUser.save();
 
-    res.status(201).json({
-      status: "success",
-      user: {
-        email: newUser.email,
-        subscription: newUser.subscription,
-      },
-    });
+    try {
+      await verificationEmail(email, verificationToken);
+      res.status(201).json({
+        status: "success",
+        user: {
+          email: newUser.email,
+          subscription: newUser.subscription,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to send verification email" });
+    }
   } catch (error) {
     next(error);
   }
@@ -55,6 +64,7 @@ const login = async (req, res, next) => {
       user: {
         email: user.email,
         subscription: user.subscription,
+        avatarURL: user.avatarURL,
       },
     });
   } catch (error) {
