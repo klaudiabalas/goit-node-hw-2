@@ -79,6 +79,10 @@ const validateSubscription = (req, res, next) => {
   next();
 };
 
+const schemaEmail = Joi.object({
+  email: Joi.string().email().required(),
+});
+
 module.exports = {
   User,
   userValidationSchema,
@@ -86,4 +90,5 @@ module.exports = {
   subscriptionSchema,
   validateBody,
   validateSubscription,
+  schemaEmail,
 };
